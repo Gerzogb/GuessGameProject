@@ -44,11 +44,6 @@ class Window(QWidget):
         self.now_settings.setEnabled(False)
         self.now_settings.resize(300, 200)
         self.now_settings.move(200, 140)
-        self.now_settings.setPlainText('Случайное число от 0 до 100\n'
-                                       'Колчиество побед:\n'
-                                       'Кол-во приогрышей:\n'
-                                       'Самое минимальное кол-во ходов:\n'
-                                       'Самое максимальное кол-во ходов:\n')
         self.now_settings.hide()
 
         # объекты для больше-меньше
@@ -96,10 +91,16 @@ class Window(QWidget):
         self.inputGuess.hide()
 
         # различные переменные для игры:
+        #надо было капсом делать все
         self.radius = 100
         self.num_guess = randint(0, self.radius)
         self.moves = 0
-
+        con = sqlite3.connect('gamer_stats.db')
+        self.cur = con.cursor()
+        self.max_moves = self.cur.execute('''SELECT max FROM stats''').fetchall()
+        self.min_moves = self.cur.execute('''SELECT min FROM stats''').fetchall()
+        self.wins = self.cur.execute('''SELECT wins FROM stats''').fetchall()
+        self.loses = self.cur.execute('''SELECT loses FROM stats''').fetchall()
 
     def settings(self):
         # да, это ужасный вариант
@@ -116,11 +117,14 @@ class Window(QWidget):
     def new_radius(self):
         self.radius = int(self.change_radius.text())
         self.num_guess = randint(0, self.radius)
+        self.max_moves = self.cur.execute('''SELECT max FROM stats''').fetchall()
+        self.min_moves = self.cur.execute('''SELECT min FROM stats''').fetchall()
+        self.wins = self.cur.execute('''SELECT wins FROM stats''').fetchall()
+        self.loses = self.cur.execute('''SELECT loses FROM stats''').fetchall()
         self.now_settings.setPlainText(f'Случайное число от 0 до {str(self.radius)}\n'
-                                       'Колчиество побед:\n'
-                                       'Кол-во приогрышей:\n'
-                                       'Самое минимальное кол-во ходов:\n'
-                                       'Самое максимальное кол-во ходов:\n')
+                                       f'Колчиество побед:{str(self.wins[0][0])}\n'
+                                       f'Самое минимальное кол-во ходов:{str(self.min_moves[0][0])}\n'
+                                       f'Самое максимальное кол-во ходов:{str(self.max_moves[0][0])}\n')
         print('удачное изменение')
 
     def back_to_menu(self):
@@ -139,6 +143,7 @@ class Window(QWidget):
         self.change_btn.hide()
         self.NameMoreLess.hide()
         self.now_settings.hide()
+        self.again_btn.hide()
 
     def restart_game(self):
         self.answer.setPlainText('')
@@ -154,6 +159,9 @@ class Window(QWidget):
         self.NameMoreLess.setFont(QFont('Times', 15))
         self.NameMoreLess.setText('Добро пожаловать в Угадай Число Больше и Меньше!')
 
+        self.answer.setPlainText('За догадку > или < дается 0.5\n'
+                                 'За догадку = дается 1.0')
+
         self.more_btn.show()
         self.less_btn.show()
         self.equal_btn.show()
@@ -166,38 +174,65 @@ class Window(QWidget):
         self.settings_btn.hide()
 
     #функции кнопок больше-меньше
+
     def is_more(self):
         self.instruction.hide()
-        inputGuess = int(self.inputGuess.text())
-        answer = self.num_guess > inputGuess
-        self.moves += 0.5
-        if answer:  # запихай в try чтобы избежать ПУСТОЙ СТРОКИ, НЕ ЧИСЛА, ДРОБИ
-            self.answer.setPlainText('Да, число больше')
+        inputGuess = self.inputGuess.text()
+        if inputGuess.isdigit():
+            inputGuess = int(self.inputGuess.text())
+            answer = self.num_guess > inputGuess
+            self.moves += 0.5
+            if answer:
+                self.answer.setPlainText('Да, число больше')
+            else:
+                self.answer.setPlainText('Нет, число меньше')
         else:
-            self.answer.setPlainText('Нет, число меньше')
+            self.answer.setPlainText('Некорректный ввод')
 
     def is_less(self):
         self.instruction.hide()
-        inputGuess = int(self.inputGuess.text())
-        answer = self.num_guess < inputGuess
-        self.moves += 0.5
-        if answer:  # запихай в try чтобы избежать ПУСТОЙ СТРОКИ, НЕ ЧИСЛА, ДРОБИ
-            self.answer.setPlainText('Да, число меньше')
+        inputGuess = self.inputGuess.text()
+        if inputGuess.isdigit():
+            inputGuess = int(self.inputGuess.text())
+            answer = self.num_guess < inputGuess
+            self.moves += 0.5
+            if answer:
+                self.answer.setPlainText('Да, число меньше')
+            else:
+                self.answer.setPlainText('Нет, число больше')
         else:
-            self.answer.setPlainText('Нет, число больше')
+            self.answer.setPlainText('Некорректный ввод')
 
     def is_equal(self):
         self.instruction.hide()
-        inputGuess = int(self.inputGuess.text())
-        answer = self.num_guess == inputGuess
-        self.moves += 1.0
-        if answer:  # запихай в try чтобы избежать ПУСТОЙ СТРОКИ, НЕ ЧИСЛА, ДРОБИ
-            self.answer.setPlainText('Йухуу, число угадано!!')
-            self.back_btn.show()
-            self.again_btn.show()
-            self.back_btn.clicked.connect(self.back_to_menu)
+        inputGuess = self.inputGuess.text()
+
+        if inputGuess.isdigit():
+            self.moves += 1.0
+            inputGuess = int(self.inputGuess.text())
+            answer = self.num_guess == inputGuess
+
+            if answer:
+                self.answer.setPlainText('Йухуу, число угадано!!')
+                con = sqlite3.connect('gamer_stats.db')
+                cur = con.cursor()
+                if self.moves > self.max_moves[0][0]:
+                    print(self.max_moves[0][0])
+                    cur.execute(f"""UPDATE stats SET max={str(self.moves)}""")
+                if self.moves < self.min_moves[0][0]:
+                    print(self.min_moves[0][0])
+                    cur.execute(f"""UPDATE stats SET max={str(self.moves)}""")
+                now = self.wins[0][0] + 1
+                cur.execute(f'''UPDATE stats SET wins={str(now)}''')
+                con.commit()
+                self.back_btn.show()
+                self.again_btn.show()
+                self.back_btn.clicked.connect(self.back_to_menu)
+                self.moves = 0
+            else:
+                self.answer.setPlainText('Нет, попробуй ещё раз')
         else:
-            self.answer.setPlainText('Нет, попробуй ещё раз')
+            self.answer.setPlainText('Некорректный ввод')
     # конец функций кнопок
 
     def initUI(self):
@@ -209,8 +244,5 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     wnd = Window()
     wnd.show()
-    con = sqlite3.connect('gamer_stats.db')
-    cur = con.cursor()
-    con.commit()
-    con.close()
+
     sys.exit(app.exec())
