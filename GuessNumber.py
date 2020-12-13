@@ -205,3 +205,14 @@ while True:
     while want != '1' and want != '2' and want != 'q':  # защита от дураков
         print('Такой вариант невозможен')
         want = input()
+
+    if want == '1':
+        GuessNumberLossOrMore().start_game()
+    else:
+        GuessNumberHotCold().start_game()
+
+    print('Сыграем в другую игру? [y/n]')
+    if input().lower() == 'y':
+        pass
+    else:
+        break

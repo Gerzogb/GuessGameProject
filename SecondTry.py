@@ -49,7 +49,6 @@ class Window(QWidget):
         # объекты для больше-меньше
         # BUTTONS
         self.instruction = QLabel(self)
-        self.instruction.setText('Вводите своё предпололжение в виде числа без другиз знаков')
         self.instruction.setFont(QFont('Times', 12))
         self.instruction.move(50, 80)
         self.instruction.hide()
@@ -75,12 +74,15 @@ class Window(QWidget):
         self.equal_btn.setText('=')
         self.equal_btn.move(140, 260)
         self.equal_btn.clicked.connect(self.is_equal)
+        self.equal_btn.clicked.connect(self.Easter_eggs)
         self.equal_btn.hide()
+
+        # конец объектов больше-меньше
 
         # output and input
         self.answer = QPlainTextEdit(self)
         self.answer.setEnabled(False)
-        self.answer.resize(150, 150)
+        self.answer.resize(450, 350)
         self.answer.move(220, 140)
         self.answer.hide()
 
@@ -90,8 +92,22 @@ class Window(QWidget):
         self.inputGuess.move(50, 140)
         self.inputGuess.hide()
 
+        # объекты холодно-горячо
+
+        self.ColdWarm_btn.clicked.connect(self.ColdWarm_game)
+        self.Cold.hide()
+        self.Hot.hide()
+
+        self.check_btn = QPushButton(self)
+        self.check_btn.resize(60, 60)
+        self.check_btn.move(140, 200)
+
+        self.check_btn.hide()
+
+        # коец объектов холодно- горячо
+
         # различные переменные для игры:
-        #надо было капсом делать все
+        # надо было капсом делать все
         self.radius = 100
         self.num_guess = randint(0, self.radius)
         self.moves = 0
@@ -101,6 +117,13 @@ class Window(QWidget):
         self.min_moves = self.cur.execute('''SELECT min FROM stats''').fetchall()
         self.wins = self.cur.execute('''SELECT wins FROM stats''').fetchall()
         self.loses = self.cur.execute('''SELECT loses FROM stats''').fetchall()
+
+        self.max_moves2 = self.cur.execute('''SELECT max FROM cold_warm_stats''').fetchall()
+        self.min_moves2 = self.cur.execute('''SELECT min FROM cold_warm_stats''').fetchall()
+        self.wins2 = self.cur.execute('''SELECT wins FROM cold_warm_stats''').fetchall()
+        self.loses2 = self.cur.execute('''SELECT loses FROM cold_warm_stats''').fetchall()
+
+        self.game_flag = 0  # 0 - nothing, 1 - More or Less, 2 - Hot and Cold
 
     def settings(self):
         # да, это ужасный вариант
@@ -117,14 +140,16 @@ class Window(QWidget):
     def new_radius(self):
         self.radius = int(self.change_radius.text())
         self.num_guess = randint(0, self.radius)
-        self.max_moves = self.cur.execute('''SELECT max FROM stats''').fetchall()
-        self.min_moves = self.cur.execute('''SELECT min FROM stats''').fetchall()
-        self.wins = self.cur.execute('''SELECT wins FROM stats''').fetchall()
-        self.loses = self.cur.execute('''SELECT loses FROM stats''').fetchall()
-        self.now_settings.setPlainText(f'Случайное число от 0 до {str(self.radius)}\n'
-                                       f'Колчиество побед:{str(self.wins[0][0])}\n'
-                                       f'Самое минимальное кол-во ходов:{str(self.min_moves[0][0])}\n'
-                                       f'Самое максимальное кол-во ходов:{str(self.max_moves[0][0])}\n')
+
+        self.now_settings.setPlainText(f'Случайное число от 0 до {str(self.radius)}\n\n'
+                                       'Больше - меньше: \n'
+                                       f'Колчиество побед: {str(self.wins[0][0])}\n'
+                                       f'Самое минимальное кол-во ходов: {str(self.min_moves[0][0])}\n'
+                                       f'Самое максимальное кол-во ходов: {str(self.max_moves[0][0])}\n\n'
+                                       f'Холодно - горячо: \n'
+                                       f'Колчиество побед: {str(self.wins2[0][0])}\n'
+                                       f'Самое минимальное кол-во ходов: {str(self.min_moves2[0][0])}\n'
+                                       f'Самое максимальное кол-во ходов: {str(self.max_moves2[0][0])}\n')
         print('удачное изменение')
 
     def back_to_menu(self):
@@ -144,6 +169,9 @@ class Window(QWidget):
         self.NameMoreLess.hide()
         self.now_settings.hide()
         self.again_btn.hide()
+        self.check_btn.hide()
+        self.Cold.hide()
+        self.Hot.hide()
 
     def restart_game(self):
         self.answer.setPlainText('')
@@ -153,11 +181,13 @@ class Window(QWidget):
 
     def less_more_game(self):
         self.MenuLabel.hide()
+        self.equal_btn.move(140, 260)
 
         self.NameMoreLess.move(20, 20)
         self.NameMoreLess.resize(610, 40)
         self.NameMoreLess.setFont(QFont('Times', 15))
         self.NameMoreLess.setText('Добро пожаловать в Угадай Число Больше и Меньше!')
+        self.NameMoreLess.show()
 
         self.answer.setPlainText('За догадку > или < дается 0.5\n'
                                  'За догадку = дается 1.0')
@@ -166,7 +196,6 @@ class Window(QWidget):
         self.less_btn.show()
         self.equal_btn.show()
         self.answer.show()
-        self.instruction.show()
         self.inputGuess.show()
 
         self.ColdWarm_btn.hide()
@@ -213,7 +242,8 @@ class Window(QWidget):
             answer = self.num_guess == inputGuess
 
             if answer:
-                self.answer.setPlainText('Йухуу, число угадано!!')
+                self.instruction.setText('Йухуу, число угадано!!')
+                self.instruction.show()
                 con = sqlite3.connect('gamer_stats.db')
                 cur = con.cursor()
                 if self.moves > self.max_moves[0][0]:
@@ -233,6 +263,144 @@ class Window(QWidget):
                 self.answer.setPlainText('Нет, попробуй ещё раз')
         else:
             self.answer.setPlainText('Некорректный ввод')
+
+# отвечает за игру Холодно-Горячо
+    def ColdWarm_game(self):
+        self.NameMoreLess.show()
+        self.NameMoreLess.move(20, 20)
+        self.NameMoreLess.resize(610, 40)
+        self.NameMoreLess.setFont(QFont('Times', 15))
+        self.NameMoreLess.setText('Добро пожаловать в Угадай Число Холодно - Горячо!')
+        self.instruction.setText('Вводите число и нажимайте кнопку, нажмите = когда будете уверены')
+
+        self.check_btn.clicked.connect(self.checking)
+
+        self.back_btn.show()
+        self.equal_btn.move(140, 140)
+        self.equal_btn.show()
+        self.Hot.show()
+        self.Cold.show()
+        self.instruction.show()
+        self.inputGuess.show()
+        self.check_btn.show()
+
+        self.MenuLabel.hide()
+        self.ColdWarm_btn.hide()
+        self.LessMore_btn.hide()
+        self.settings_btn.hide()
+
+    def checking(self):
+        self.instruction.hide()
+        now_num = int(self.inputGuess.text())
+        self.moves += 0.25
+        # считаем расстояние до числа, если оно перед загаданным
+        if now_num > self.num_guess:
+            from_num = now_num - self.num_guess
+            print(self.num_guess)
+            if from_num > 100:
+                self.Cold.setFont(QFont('Times', 35))
+                self.Hot.setFont(QFont('Times', 5))
+
+            elif from_num in range(75, 101):
+                self.Cold.setFont(QFont('Times', 30))
+                self.Hot.setFont(QFont('Times', 8))
+
+            elif from_num in range(50, 76):
+                self.Cold.setFont(QFont('Times', 20))
+                self.Hot.setFont(QFont('Times', 8))
+
+            elif from_num in range(25, 51):
+                self.Cold.setFont(QFont('Times', 8))
+                self.Hot.setFont(QFont('Times', 20))
+
+            elif from_num in range(0, 26):
+                self.Cold.setFont(QFont('Times', 8))
+                self.Hot.setFont(QFont('Times', 30))
+
+        # считаем расстояние до числа, если оно за загаданным
+
+        elif now_num < self.num_guess:
+            from_num = self.num_guess - now_num
+            print(self.num_guess)
+            if from_num > 100:
+                self.Cold.setFont(QFont('Times', 35))
+                self.Hot.setFont(QFont('Times', 5))
+
+            elif from_num in range(75, 101):
+                self.Cold.setFont(QFont('Times', 30))
+                self.Hot.setFont(QFont('Times', 8))
+
+            elif from_num in range(50, 76):
+                self.Cold.setFont(QFont('Times', 20))
+                self.Hot.setFont(QFont('Times', 8))
+
+            elif from_num in range(25, 51):
+                self.Cold.setFont(QFont('Times', 8))
+                self.Hot.setFont(QFont('Times', 20))
+
+            elif from_num in range(0, 26):
+                self.Cold.setFont(QFont('Times', 8))
+                self.Hot.setFont(QFont('Times', 30))
+
+        elif now_num == self.num_guess:
+            self.Cold.setFont(QFont('Times', 2))
+            self.Hot.setFont(QFont('Times', 35))
+
+    def Easter_eggs(self):
+        if self.inputGuess.text() == '666':
+            self.answer.setPlainText('____________$$$$$$$$$$$$$$$$$$$\n'
+                                    '___________$$$$$$$$$$$$$$$$$$$$$$$\n'
+                                    '________$$$$___$$$$$$$$$$$$$$$___$$$\n'
+                                    '______$$$$______$$$$$$$$$$$$______$$$$\n'
+                                    '____$$$$$________$$$$$$$$$$________$$$$\n'
+                                    '___$$$$$__________$$$$$$$$___________$$$$\n'
+                                    '__$$$$$____________$$$$$$____________$$$$$\n'
+                                    '_$$$$$$____________$$$$$$$____________$$$$$\n'
+                                    '_$$$$$$___________$$$$$$$$$___________$$$$$$\n'
+                                    '_$$$$$$$_________$$$_$$$_$$$_________$$$$$$$\n'
+                                    '_$$$$$$$$______$$$$___$___$$$$______$$$$$$$$\n'
+                                    '_$$$$$$$$$$$$$$$$$___$$$___$$$$$$$$$$$$$$$$$\n'
+                                    '_$$$_$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$_o$$\n'
+                                    '_$$$__$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$__$$$\n'
+                                    '__$$$__$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$__o$$$\n'
+                                    '__$$o__$$__$$$$$$$$$$$$$$$$$$__$$_____o$$\n'
+                                    '____$$o$____$$__$$$$$$__$$______$___o$$\n'
+                                    '_____$$$o$__$____$$___$$___$$_____$$__o$\n'
+                                    '______$$$$O$____$$____$$___$$ ____o$$$\n'
+                                     '_________$$o$$___$$___$$___$$___o$$$\n'
+                                     '___________$$$$o$o$o$o$o$o$o$o$$$$\n'
+                                    '______________$$$$$$$$$$$$$$$$$$$\n')
+
+        elif self.inputGuess.text() == 'гусь' or self.inputGuess.text() == 'goose':
+            self.answer.setPlainText('░░░░░░░░░░░░░░░░░░░░░▄▄▄░░░░\n'
+                                     '░░░░░░░░░░░░░░░░░░░▄█████▄░░\n'
+                                     '░░░░░░░░░░░░░░░░░░░████████▄\n'
+                                     '░░░░░░░░░░░░░░░░░░░███░░░░░░\n'
+                                     '░░░░░░░░░░░░░░░░░░░███░░░░░░\n'
+                                     '░░░░░░░░░░░░░░░░░░░███░░░░░░\n'
+                                     '░░░░░░░░░░░░░░░░░░░███░░░░░░\n'
+                                     '░░░░░░░░░░░░░░░░░░░███░░░░░░\n'
+                                     '░░░░░░░░░░░░░▄▄▄▄▄████░░░░░░\n'
+                                     '░░░░░░░░▄▄████████████▄░░░░░\n'
+                                     '░░░░▄▄██████████████████░░░░\n'
+                                     '▄▄██████████████████████░░░░\n'
+                                     '░▀▀████████████████████▀░░░░\n'
+                                     '░░░░▀█████████████████▀░░░░░\n'
+                                     '░░░░░░▀▀███████████▀▀░░░░░░░\n'
+                                     '░░░░░░░░░▀███▀▀██▀░░░░░░░░░░\n'
+                                     '░░░░░░░░░░█░░░░██░░░░░░░░░░░\n'
+                                     '░░░░░░░░░░█░░░░█░░░░░░░░░░░░\n'
+                                     '░░░▄▄▄▄███████▄███████▄▄▄▄░░')
+
+        elif self.inputGuess.text() == 'кот' or self.inputGuess.text() == 'cat':
+            self.answer.setPlainText('┈┈╱▔▔▔▏┈┈▕╲┈╱▏┈┈\n'
+                                    '┈╱╱▔▔▔┈┈┈╱┳▔┳╲┈┈\n'
+                                    '┈▏▏┈┈┈┈┈┈▏┈▅┈▕┈┈\n'
+                                    '┈╲╲▂▂▂▂▂╱╲╱┻╲╱┈┈\n'
+                                    '┈┈▏▕▕▕▕▕▕┈╰━╯┃┈┈\n'
+                                    '┈┈▏▕╱▕╱▕╱┈╱▔╲┃┈┈\n'
+                                    '┈┈▏┏┳┳┓┏━┓┃┈┈\n')
+
     # конец функций кнопок
 
     def initUI(self):
