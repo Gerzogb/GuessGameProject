@@ -291,60 +291,62 @@ class Window(QWidget):
 
     def checking(self):
         self.instruction.hide()
-        now_num = int(self.inputGuess.text())
-        self.moves += 0.25
-        # считаем расстояние до числа, если оно перед загаданным
-        if now_num > self.num_guess:
-            from_num = now_num - self.num_guess
-            print(self.num_guess)
-            if from_num > 100:
-                self.Cold.setFont(QFont('Times', 35))
-                self.Hot.setFont(QFont('Times', 5))
+        now_num = self.inputGuess.text()
+        if now_num.isdigit():
+            now_num = int(now_num)
+            self.moves += 0.25
+            # считаем расстояние до числа, если оно перед загаданным
+            if now_num > self.num_guess:
+                from_num = now_num - self.num_guess
+                print(self.num_guess)
+                if from_num > 100:
+                    self.Cold.setFont(QFont('Times', 35))
+                    self.Hot.setFont(QFont('Times', 5))
 
-            elif from_num in range(75, 101):
-                self.Cold.setFont(QFont('Times', 30))
-                self.Hot.setFont(QFont('Times', 8))
+                elif from_num in range(75, 101):
+                    self.Cold.setFont(QFont('Times', 30))
+                    self.Hot.setFont(QFont('Times', 8))
 
-            elif from_num in range(50, 76):
-                self.Cold.setFont(QFont('Times', 20))
-                self.Hot.setFont(QFont('Times', 8))
+                elif from_num in range(50, 76):
+                    self.Cold.setFont(QFont('Times', 20))
+                    self.Hot.setFont(QFont('Times', 8))
 
-            elif from_num in range(25, 51):
-                self.Cold.setFont(QFont('Times', 8))
-                self.Hot.setFont(QFont('Times', 20))
+                elif from_num in range(25, 51):
+                    self.Cold.setFont(QFont('Times', 8))
+                    self.Hot.setFont(QFont('Times', 20))
 
-            elif from_num in range(0, 26):
-                self.Cold.setFont(QFont('Times', 8))
-                self.Hot.setFont(QFont('Times', 30))
+                elif from_num in range(0, 26):
+                    self.Cold.setFont(QFont('Times', 8))
+                    self.Hot.setFont(QFont('Times', 30))
 
-        # считаем расстояние до числа, если оно за загаданным
+            # считаем расстояние до числа, если оно за загаданным
 
-        elif now_num < self.num_guess:
-            from_num = self.num_guess - now_num
-            print(self.num_guess)
-            if from_num > 100:
-                self.Cold.setFont(QFont('Times', 35))
-                self.Hot.setFont(QFont('Times', 5))
+            elif now_num < self.num_guess:
+                from_num = self.num_guess - now_num
+                print(self.num_guess)
+                if from_num > 100:
+                    self.Cold.setFont(QFont('Times', 35))
+                    self.Hot.setFont(QFont('Times', 5))
 
-            elif from_num in range(75, 101):
-                self.Cold.setFont(QFont('Times', 30))
-                self.Hot.setFont(QFont('Times', 8))
+                elif from_num in range(75, 101):
+                    self.Cold.setFont(QFont('Times', 30))
+                    self.Hot.setFont(QFont('Times', 8))
 
-            elif from_num in range(50, 76):
-                self.Cold.setFont(QFont('Times', 20))
-                self.Hot.setFont(QFont('Times', 8))
+                elif from_num in range(50, 76):
+                    self.Cold.setFont(QFont('Times', 20))
+                    self.Hot.setFont(QFont('Times', 8))
 
-            elif from_num in range(25, 51):
-                self.Cold.setFont(QFont('Times', 8))
-                self.Hot.setFont(QFont('Times', 20))
+                elif from_num in range(25, 51):
+                    self.Cold.setFont(QFont('Times', 8))
+                    self.Hot.setFont(QFont('Times', 20))
 
-            elif from_num in range(0, 26):
-                self.Cold.setFont(QFont('Times', 8))
-                self.Hot.setFont(QFont('Times', 30))
+                elif from_num in range(0, 26):
+                    self.Cold.setFont(QFont('Times', 8))
+                    self.Hot.setFont(QFont('Times', 30))
 
-        elif now_num == self.num_guess:
-            self.Cold.setFont(QFont('Times', 2))
-            self.Hot.setFont(QFont('Times', 35))
+            elif now_num == self.num_guess:
+                self.Cold.setFont(QFont('Times', 2))
+                self.Hot.setFont(QFont('Times', 35))
 
     def Easter_eggs(self):
         if self.inputGuess.text() == '666':
